@@ -22,7 +22,6 @@ from scipy import stats
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
 CACHE_DIR = OUTPUT_DIR / "cache"
-RNG = np.random.default_rng(42)
 
 
 # --------------------------------------------------------------------------- #
@@ -114,13 +113,18 @@ def ypa_ttest(gained, held):
 
 
 def bootstrap_lift_ci(gained, held, n_boot=10000):
-    """Bootstrap 95% CI on the completion-rate lift (gained - held)."""
+    """Bootstrap 95% CI on the completion-rate lift (gained - held).
+
+    Uses a fresh seeded RNG so the CI is identical no matter when or how often
+    this is called (single source of truth across main.py and stats.py).
+    """
+    rng = np.random.default_rng(42)
     g = gained["completed"].to_numpy().astype(float)
     h = held["completed"].to_numpy().astype(float)
     lifts = np.empty(n_boot)
     for i in range(n_boot):
-        gb = RNG.choice(g, size=len(g), replace=True).mean()
-        hb = RNG.choice(h, size=len(h), replace=True).mean()
+        gb = rng.choice(g, size=len(g), replace=True).mean()
+        hb = rng.choice(h, size=len(h), replace=True).mean()
         lifts[i] = (gb - hb) * 100
     lo, hi = np.percentile(lifts, [2.5, 97.5])
     return {"lift_pts": (g.mean() - h.mean()) * 100, "ci_lo": lo, "ci_hi": hi}
@@ -164,9 +168,9 @@ def run(df):
         f"Separation at the throw significantly predicts completion on "
         f"scramble throws (logistic p={log['p_value']:.3f}, "
         f"odds ratio {log['odds_ratio']:.2f}x per yard). Receivers who gained "
-        f"1+ yd completed {z['comp_gained']:.0f}% vs {z['comp_held']:.0f}% for "
-        f"those who held even (+{z['lift_pts']:.0f} pts, p={z['p_value']:.3f}, "
-        f"95% CI [{boot['ci_lo']:.0f}, {boot['ci_hi']:.0f}] pts). "
+        f"1+ yd completed {z['comp_gained']:.1f}% vs {z['comp_held']:.1f}% for "
+        f"those who held even (+{z['lift_pts']:.1f} pts, p={z['p_value']:.3f}, "
+        f"95% CI [{boot['ci_lo']:.1f}, {boot['ci_hi']:.1f}] pts). "
         + ("The effect is statistically significant."
            if sig else "Effect not significant at 0.05."))
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

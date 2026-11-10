@@ -1,1 +1,1 @@
-Separation at the throw significantly predicts completion on scramble throws (logistic p=0.000, odds ratio 1.23x per yard). Receivers who gained 1+ yd completed 64% vs 50% for those who held even (+14 pts, p=0.020, 95% CI [2, 25] pts). The effect is statistically significant.
+Separation at the throw significantly predicts completion on scramble throws (logistic p=0.000, odds ratio 1.23x per yard). Receivers who gained 1+ yd completed 63.8% vs 50.3% for those who held even (+13.5 pts, p=0.020, 95% CI [2.3, 24.8] pts). The effect is statistically significant.

@@ -10,9 +10,9 @@ When the play breaks down, which receivers keep working to get open, and does it
 
 We built a metric that measures how much separation a WR, TE, or RB gains between the moment the QB leaves the pocket and the moment he throws.
 
-Receivers who gained 1+ yard of separation completed 64.6% of targets for 10.99 yards each, while receivers who just held steady completed only 50.3% for 7.94 yards.
+Receivers who gained 1+ yard of separation completed 63.8% of targets for 11.7 yards each, while receivers who just held steady completed only 50.3% for 7.9 yards.
 
-This matters even more because QBs threw to the most open receiver on only 27.3% of scrambles, and scramble throws are already harder (55.2% complete vs 67.3% on normal dropbacks).
+This matters even more because QBs threw to the most open receiver on only 27.3% of scramble throws, and scramble throws are already harder (55.2% complete vs 67.3% on normal dropbacks).
 
 Coaches can drill and grade scramble rules, scouts can compare receivers, and broadcasters can explain broken plays live.
 
@@ -21,6 +21,8 @@ Coaches can drill and grade scramble rules, scouts can compare receivers, and br
 ![Separation payoff](output/separation_payoff.png)
 
 Get open and you get paid: gaining separation during a scramble lifts completion rate and yards per attempt well above the average.
+
+Why does "Lost 1+ yd" beat "Held"? Those receivers (often RBs) started wide open (6.3 yds from a defender) and were still at 3.6 yds at the throw, more open than the "Held" group (3.3 yds).
 
 ## Is it real, or just noise?
 
@@ -40,8 +42,8 @@ The top three are all wide receivers: Laviska Shenault, Courtland Sutton, and St
 
 ## Coaching takeaway
 
-- Receivers: keep working after the QB breaks the pocket. Gaining 1+ yard of separation during the scramble is worth about +14.3 completion percentage points over just holding your ground.
-- QBs: keep your eyes up. The most open receiver gets the ball on only 27.3% of scrambles.
+- Receivers: keep working after the QB breaks the pocket. Gaining 1+ yard of separation during the scramble is worth about +13.5 completion percentage points over just holding your ground.
+- QBs: keep your eyes up. The most open receiver gets the ball on only 27.3% of scramble throws.
 
 ## How we measured it
 

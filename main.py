@@ -110,12 +110,39 @@ def print_headline_summary(df: pd.DataFrame):
         scr["sep_throw"] == scr.groupby(keys)["sep_throw"].transform("max"))
     most_open = scr[scr["targeted"]]["is_most_open"].mean() * 100
 
+    # Gainers vs held: the single source of truth is sep_gained >= 1 (same
+    # group tested in src/stats.py). Reuse stats.py helpers so the numbers
+    # cannot drift between modules.
+    gainers, held = sds_stats._groups(df)
+    z = sds_stats.two_proportion_z(gainers, held)
+    boot = sds_stats.bootstrap_lift_ci(gainers, held)
+
+    # Lost 1+ yd vs Held bucket separation (explains why Lost beats Held).
+    d = df[df["is_scramble"] & df["targeted"]].dropna(
+        subset=["sep_gained"]).drop_duplicates(keys)
+    lost = d[d["sep_gained"] <= -1.0]
+
     print("\n== headline summary (README numbers) ==")
     print(f"scramble throws (N)                 : {n_scramble}")
     print(f"targeted scramble receivers (M)     : {m_targets}")
     print(f"completion%% traditional vs scramble : "
           f"{comp[False]:.1f}% vs {comp[True]:.1f}%")
-    print(f"QB targeted the most-open receiver  : {most_open:.1f}% of scrambles")
+    print(f"QB targeted the most-open receiver  : "
+          f"{most_open:.1f}% of scramble throws")
+
+    print(f"gainers (sep_gained >= 1)           : "
+          f"comp {z['comp_gained']:.1f}%  "
+          f"ypa {gainers['playResult'].mean():.1f}  n={z['n_gained']}")
+    print(f"held (-1 < sep_gained < 1)          : "
+          f"comp {z['comp_held']:.1f}%  "
+          f"ypa {held['playResult'].mean():.1f}  n={z['n_held']}")
+    print(f"completion%% lift (gainers - held)   : "
+          f"{z['lift_pts']:+.1f} pts  p={z['p_value']:.3f}  "
+          f"95%% CI [{boot['ci_lo']:.1f}, {boot['ci_hi']:.1f}]")
+    print(f"Lost 1+ yd bucket   : sep_start {lost['sep_start'].mean():.1f}  "
+          f"sep_throw {lost['sep_throw'].mean():.1f}")
+    print(f"Held bucket         : sep_start {held['sep_start'].mean():.1f}  "
+          f"sep_throw {held['sep_throw'].mean():.1f}")
 
 
 if __name__ == "__main__":
