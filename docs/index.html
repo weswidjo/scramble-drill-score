@@ -32,6 +32,12 @@
       <h1>When the play breaks down, keep working.</h1>
       <p class="subtitle">When a quarterback scrambles, which receivers keep working to get open — and does it actually pay off?</p>
 
+      <div class="hero-links">
+        <a href="https://github.com/weswidjo/scramble-drill-score" target="_blank" rel="noopener">GitHub repo</a>
+        <a href="https://github.com/weswidjo/scramble-drill-score/blob/main/README.md" target="_blank" rel="noopener">README</a>
+        <a href="https://github.com/weswidjo/scramble-drill-score/tree/main/src" target="_blank" rel="noopener">Code (src/)</a>
+      </div>
+
       <div class="hero-stats">
         <div class="stat-card big gain">
           <div class="stat-value" id="hero-gain">—</div>
@@ -116,7 +122,10 @@
           <button class="chip" data-pos="TE">TE</button>
           <button class="chip" data-pos="RB">RB</button>
         </div>
-        <input type="search" id="lb-search" placeholder="Search player…" />
+        <div class="lb-right">
+          <input type="search" id="lb-search" placeholder="Search player…" />
+          <button class="chip" id="lb-showall">Show all players</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table class="lb-table" id="lb-table">

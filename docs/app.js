@@ -33,11 +33,11 @@ function renderHero() {
   const h = SITE.headline;
   document.getElementById("hero-gain").textContent = h.gainers_caught_pct + "%";
   document.getElementById("hero-gain-detail").textContent =
-    `caught when the receiver gained separation (${h.gainers_detail})`;
+    `caught when the receiver gained 1+ yd of separation (${h.gainers_detail})`;
   document.getElementById("hero-nongain").textContent =
     h.nongainers_caught_pct + "%";
   document.getElementById("hero-nongain-detail").textContent =
-    `caught when the receiver did not (${h.nongainers_detail})`;
+    `caught when he held steady, within ±1 yd (${h.nongainers_detail})`;
 
   document.getElementById("hero-explain").textContent =
     `On a scramble, the play breaks down and the quarterback leaves the pocket. ` +
@@ -51,18 +51,23 @@ function renderHero() {
 /* ---------------- 2. KEY NUMBERS ---------------- */
 function renderKeyNumbers() {
   const row = document.getElementById("key-numbers-row");
-  const order = [
-    "scramble_dropbacks", "scramble_throws_with_start",
-    "median_scramble_duration_s", "targeted_throws",
-    "z_test_p", "odds_ratio_per_yd",
+  const kn = SITE.key_numbers;
+  const cards = [
+    kn.scramble_dropbacks,
+    kn.scramble_throws_with_start,
+    kn.median_scramble_duration_s,
+    kn.targeted_throws,
+    kn.z_test_p,
+    // Controlled odds ratio from the headline model (adjusted for sep_start + position).
+    {
+      value: SITE.headline.logistic_odds_ratio_per_yd + "×",
+      label: "Odds of completion per +1 yd (adjusted for starting separation and position)",
+    },
   ];
-  row.innerHTML = order.map((k) => {
-    const n = SITE.key_numbers[k];
-    return `<div class="card kn-card">
+  row.innerHTML = cards.map((n) => `<div class="card kn-card">
       <div class="kn-value">${n.value}</div>
       <div class="kn-label">${n.label}</div>
-    </div>`;
-  }).join("");
+    </div>`).join("");
 }
 
 /* ---------------- 3. THE PAYOFF ---------------- */
@@ -105,23 +110,35 @@ function barChart(canvasId, labels, data, ns, color, unit, overall) {
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
       ctx.setLineDash([]);
+      // label pinned to the LEFT edge, BELOW the line, so it clears the
+      // bar-top value labels (which always sit above the bars)
+      const label = `overall ${overall.toFixed(1)}${unit}`;
+      ctx.font = "bold 12px sans-serif";
+      const lw = ctx.measureText(label).width + 10;
+      ctx.fillStyle = "rgba(22,24,29,0.85)";
+      ctx.fillRect(left + 2, y + 4, lw, 16);
       ctx.fillStyle = COLORS.accent;
-      ctx.font = "12px sans-serif";
-      ctx.textAlign = "right";
-      ctx.fillText(`overall ${overall.toFixed(1)}${unit}`, right - 6, y - 6);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(label, left + 6, y + 6);
+      ctx.textBaseline = "alphabetic";
       ctx.restore();
     },
   };
-  const nLabels = {
-    id: "nLabels",
+  // value on top of each bar, with n below it
+  const barLabels = {
+    id: "barLabels",
     afterDatasetsDraw(chart) {
       const ctx = chart.ctx;
       const meta = chart.getDatasetMeta(0);
       ctx.save();
-      ctx.fillStyle = COLORS.muted;
-      ctx.font = "11px sans-serif";
       ctx.textAlign = "center";
       meta.data.forEach((bar, i) => {
+        ctx.fillStyle = COLORS.text;
+        ctx.font = "bold 13px sans-serif";
+        ctx.fillText(`${data[i]}${unit}`, bar.x, bar.y - 20);
+        ctx.fillStyle = COLORS.muted;
+        ctx.font = "11px sans-serif";
         ctx.fillText(`n=${ns[i]}`, bar.x, bar.y - 6);
       });
       ctx.restore();
@@ -134,12 +151,17 @@ function barChart(canvasId, labels, data, ns, color, unit, overall) {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false },
         tooltip: { callbacks: { label: (c) => `${c.raw}${unit} (n=${ns[c.dataIndex]})` } } },
+      layout: { padding: { top: 28 } },
       scales: {
         x: { ticks: { color: COLORS.muted }, grid: { color: COLORS.border } },
-        y: { beginAtZero: true, ticks: { color: COLORS.muted }, grid: { color: COLORS.border } },
+        y: {
+          beginAtZero: true,
+          suggestedMax: Math.max(...data, overall) * 1.18,
+          ticks: { color: COLORS.muted }, grid: { color: COLORS.border },
+        },
       },
     },
-    plugins: [overallLine, nLabels],
+    plugins: [overallLine, barLabels],
   });
 }
 
@@ -163,12 +185,24 @@ function resultWord(r) {
 
 function renderPlays() {
   const list = document.getElementById("play-list");
-  list.innerHTML = SITE.plays.map((p, i) => {
-    const neg = p.sep_gained < 0 || p.result !== "C";
+
+  // Order: Lee Smith first (if present), then the rest in site.json order.
+  const order = SITE.plays.map((_, i) => i);
+  const lee = SITE.plays.findIndex((p) => /lee smith/i.test(p.receiver));
+  if (lee > 0) { order.splice(lee, 1); order.unshift(lee); }
+
+  list.innerHTML = order.map((i) => {
+    const p = SITE.plays[i];
+    const sepCls = p.sep_gained >= 0 ? "pos" : "neg";
     const sign = p.sep_gained >= 0 ? "+" : "";
     const rl = p.result === "C" ? "C" : p.result === "IN" ? "INT" : "I";
+    const pillCls = p.result === "C" ? "c" : "i";
+    const pillTxt = p.result === "C" ? "Complete" : p.result === "IN" ? "INT" : "Incomplete";
     return `<div class="play-item" data-idx="${i}">
-      <span class="pi-sep ${neg ? "neg" : "pos"}">${sign}${p.sep_gained} yd, ${rl}</span>
+      <div class="pi-top">
+        <span class="pi-sep ${sepCls}">${sign}${p.sep_gained} yd</span>
+        <span class="pi-pill ${pillCls}">${pillTxt}</span>
+      </div>
       <div class="pi-name">${p.receiver} <span style="color:var(--muted)">(${p.position})</span></div>
       <div class="pi-sub">${p.team} vs ${p.opponent}, Wk ${p.week}</div>
     </div>`;
@@ -202,8 +236,8 @@ function renderPlays() {
 
 async function selectPlay(idx) {
   pause();
-  document.querySelectorAll(".play-item").forEach((x, i) =>
-    x.classList.toggle("active", i === idx));
+  document.querySelectorAll(".play-item").forEach((x) =>
+    x.classList.toggle("active", +x.dataset.idx === idx));
   const meta = SITE.plays[idx];
   PV.meta = meta;
 
@@ -523,7 +557,7 @@ function setupKeys() {
 }
 
 /* ---------------- 5. LEADERBOARD ---------------- */
-let lbState = { pos: "All", search: "", sort: "mean_sep_gained", dir: -1 };
+let lbState = { pos: "All", search: "", sort: "mean_sep_gained", dir: -1, showAll: false };
 
 function renderLeaderboard() {
   document.querySelectorAll("#lb-chips .chip").forEach((c) => {
@@ -538,6 +572,12 @@ function renderLeaderboard() {
     lbState.search = e.target.value.toLowerCase();
     drawLeaderboard();
   });
+  document.getElementById("lb-showall").addEventListener("click", (e) => {
+    lbState.showAll = !lbState.showAll;
+    e.target.classList.toggle("active", lbState.showAll);
+    e.target.textContent = lbState.showAll ? "Show top 10 / bottom 5" : "Show all players";
+    drawLeaderboard();
+  });
   document.querySelectorAll("#lb-table th").forEach((th) => {
     th.addEventListener("click", () => {
       const key = th.dataset.sort;
@@ -547,6 +587,21 @@ function renderLeaderboard() {
     });
   });
   drawLeaderboard();
+}
+
+function lbRowHtml(r, maxAbs, divider) {
+  const w = (Math.abs(r.mean_sep_gained) / maxAbs) * 90;
+  const cls = r.mean_sep_gained >= 0 ? "pos" : "neg";
+  const sign = r.mean_sep_gained >= 0 ? "+" : "";
+  const divRow = divider
+    ? `<tr class="lb-divider"><td colspan="7">⋯ bottom 5 ⋯</td></tr>` : "";
+  return divRow + `<tr>
+    <td>${r.name}</td><td>${r.position}</td><td>${r.team}</td>
+    <td class="num">${r.snaps}</td>
+    <td class="num"><span class="sep-bar-wrap"><span>${sign}${r.mean_sep_gained}</span>
+      <span class="sep-bar ${cls}" style="width:${w}px"></span></span></td>
+    <td class="num">${r.targets}</td><td class="num">${r.completions}</td>
+  </tr>`;
 }
 
 function drawLeaderboard() {
@@ -560,18 +615,20 @@ function drawLeaderboard() {
   });
 
   const maxAbs = Math.max(...SITE.leaderboard.map((r) => Math.abs(r.mean_sep_gained)), 0.1);
-  document.getElementById("lb-body").innerHTML = rows.map((r) => {
-    const w = (Math.abs(r.mean_sep_gained) / maxAbs) * 90;
-    const cls = r.mean_sep_gained >= 0 ? "pos" : "neg";
-    const sign = r.mean_sep_gained >= 0 ? "+" : "";
-    return `<tr>
-      <td>${r.name}</td><td>${r.position}</td><td>${r.team}</td>
-      <td class="num">${r.snaps}</td>
-      <td class="num"><span class="sep-bar-wrap"><span>${sign}${r.mean_sep_gained}</span>
-        <span class="sep-bar ${cls}" style="width:${w}px"></span></span></td>
-      <td class="num">${r.targets}</td><td class="num">${r.completions}</td>
-    </tr>`;
-  }).join("");
+  const filtered = lbState.pos !== "All" || lbState.search;
+
+  let html;
+  // Default view (no filter/search, not showAll): top 10 + bottom 5 by sep_gained.
+  if (!lbState.showAll && !filtered && rows.length > 15 && k === "mean_sep_gained") {
+    const byGain = SITE.leaderboard.slice().sort((a, b) => b.mean_sep_gained - a.mean_sep_gained);
+    const top = byGain.slice(0, 10);
+    const bottom = byGain.slice(-5);
+    html = top.map((r) => lbRowHtml(r, maxAbs, false)).join("") +
+      bottom.map((r, i) => lbRowHtml(r, maxAbs, i === 0)).join("");
+  } else {
+    html = rows.map((r) => lbRowHtml(r, maxAbs, false)).join("");
+  }
+  document.getElementById("lb-body").innerHTML = html;
 
   document.querySelectorAll("#lb-table th").forEach((th) =>
     th.classList.toggle("sorted", th.dataset.sort === k));
