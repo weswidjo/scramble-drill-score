@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+
+# Regenerable pipeline cache (rebuilt by `python main.py`)
+output/cache/
+
+# Prototype / exploratory work (superseded by src/ and output/)
+scripts/
+figures/
+
+# Editor
+.vscode/
+.idea/
