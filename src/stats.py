@@ -79,6 +79,41 @@ def logistic_separation(df):
     }
 
 
+def logistic_controlled(df):
+    """Completion ~ sep_throw + sep_start + position dummies.
+
+    Returns the odds ratio and p-value for sep_throw after controlling for how
+    open the receiver started (sep_start) and his position.
+    """
+    d = df[df["is_scramble"] & df["targeted"]].dropna(
+        subset=["sep_throw", "sep_start", "completed"]).drop_duplicates(
+        ["gameId", "playId"]).copy()
+    y = d["completed"].astype(float).to_numpy()
+
+    cols = [np.ones(len(d)), d["sep_throw"].to_numpy(),
+            d["sep_start"].to_numpy()]
+    names = ["intercept", "sep_throw", "sep_start"]
+    # Position dummies (drop first level as reference).
+    pos = pd.get_dummies(d["officialPosition"], prefix="pos", drop_first=True)
+    for c in pos.columns:
+        cols.append(pos[c].to_numpy().astype(float))
+        names.append(c)
+    X = np.column_stack(cols)
+
+    beta, cov = _logit_fit(X, y)
+    se = np.sqrt(np.diag(cov))
+    zscores = beta / se
+    pvals = 2 * (1 - stats.norm.cdf(np.abs(zscores)))
+    i = names.index("sep_throw")
+    return {
+        "n": len(d),
+        "coef": float(beta[i]),
+        "p_value": float(pvals[i]),
+        "odds_ratio": float(np.exp(beta[i])),
+        "controls": names[2:],
+    }
+
+
 # --------------------------------------------------------------------------- #
 # 2 & 3 & 4. Group comparisons: gained 1+ vs held (within 1 yd)
 # --------------------------------------------------------------------------- #

@@ -1,5 +1,7 @@
 # Scramble Drill Score
 
+**▶ Live site: https://weswidjo.github.io/scramble-drill-score/**
+
 When the play breaks down, which receivers keep working to get open, and does it matter?
 
 ![Showcase play](output/showcase_play.gif)
@@ -28,7 +30,7 @@ Why does "Lost 1+ yd" beat "Held"? Those receivers (often RBs) started wide open
 
 We tested it. On scramble throws (n=421):
 
-- **Separation predicts completions.** A logistic regression of completion on separation at the throw is highly significant (p < 0.001). Each extra yard of separation multiplies the odds of a completion by 1.23x.
+- **Separation predicts completions.** A logistic regression of completion on separation at the throw is highly significant (p < 0.001). Each extra yard of separation multiplies the odds of a completion by 1.23x. Even after controlling for how open the receiver already was (sep at scramble start) and his position, the effect holds: odds ratio 1.22x per yard, p = 0.0003.
 - **The gap is significant.** Receivers who gained 1+ yard completed 63.8% vs 50.3% for those who held even. That +13.5 point lift has a two-proportion z-test p = 0.020, with a bootstrap 95% confidence interval of [2.3, 24.8] points.
 - **So are the yards.** Gainers averaged 11.70 yards per attempt vs 7.94 (t-test p = 0.013).
 
@@ -69,19 +71,30 @@ Data: 2021 NFL season Weeks 1-8 Next Gen Stats tracking (10 frames/sec) + PFF sc
 
 ```bash
 pip install -r requirements.txt
-python main.py   # regenerates every chart and GIF in output/
+python main.py   # runs the pipeline; builds charts, GIFs, and docs/data/*.json
 ```
+
+View the interactive site locally (it fetches JSON, so it needs a server, not file://):
+
+```bash
+python -m http.server -d docs 8000   # then open http://localhost:8000
+```
+
+Or just visit the live version: https://weswidjo.github.io/scramble-drill-score/
 
 File map:
 
-- `main.py` — one command; runs the pipeline and builds every chart and GIF.
+- `main.py` — one command; runs the pipeline and builds every chart, GIF, and the site data.
 - `src/load.py` — reads the CSVs and normalizes tracking direction.
 - `src/scramble.py` — finds scramble plays and the snap/throw/scramble-start moments.
 - `src/metric.py` — computes each receiver's separation gained.
 - `src/target.py` — finds the targeted receiver and attaches the play result.
+- `src/stats.py` — significance tests (z-test, logistic regression, bootstrap CI).
 - `src/charts.py` — builds the payoff chart and the leaderboard.
 - `src/animate.py` — builds the showcase and side-by-side play GIFs.
+- `src/build_site.py` — writes docs/data/*.json for the interactive site.
 - `src/style.py` — shared colors and fonts.
+- `docs/` — static site (index.html, style.css, app.js) served by GitHub Pages.
 - `output/` — all generated charts, GIFs, and cached data.
 
 ## Built with

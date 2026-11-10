@@ -32,6 +32,7 @@ from load import load_plays                   # noqa: E402
 import charts                                 # noqa: E402
 import animate                                # noqa: E402
 import stats as sds_stats                     # noqa: E402
+import build_site                             # noqa: E402
 
 CACHE_DIR = ROOT / "output" / "cache"
 OUTPUT_DIR = ROOT / "output"
@@ -82,6 +83,9 @@ def main():
     bad = animate.pick_antishowcase_play(df)
     animate.animate_play(*good, OUTPUT_DIR / "showcase_play.gif")
     animate.side_by_side(good, bad, OUTPUT_DIR / "side_by_side.gif")
+
+    print("\n== site data ==")
+    build_site.build_site()
 
     print_headline_summary(df)
 

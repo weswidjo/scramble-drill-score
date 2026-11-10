@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scramble Drill Score — NFL Big Data Bowl</title>
+  <meta name="description" content="When a QB scrambles, which receivers keep working to get open, and does it matter?" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%238b7cf6'/%3E%3Cellipse cx='16' cy='16' rx='9' ry='5.5' fill='%23e8e8ea'/%3E%3Cline x1='10' y1='16' x2='22' y2='16' stroke='%238b7cf6' stroke-width='1.5'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <div class="nav-inner">
+      <span class="nav-logo">Scramble Drill Score</span>
+      <div class="nav-links">
+        <a href="#key-numbers">Key numbers</a>
+        <a href="#payoff">The payoff</a>
+        <a href="#plays">Watch the plays</a>
+        <a href="#leaderboard">Leaderboard</a>
+        <a href="#by-position">By position</a>
+        <a href="#takeaways">Takeaways</a>
+        <a href="#method">Method &amp; limits</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <!-- 1. HERO -->
+    <header class="hero" id="top">
+      <p class="eyebrow">NFL BIG DATA BOWL · SCRAMBLE DRILL SCORE</p>
+      <h1>When the play breaks down, keep working.</h1>
+      <p class="subtitle">When a quarterback scrambles, which receivers keep working to get open — and does it actually pay off?</p>
+
+      <div class="hero-stats">
+        <div class="stat-card big gain">
+          <div class="stat-value" id="hero-gain">—</div>
+          <div class="stat-label" id="hero-gain-detail">caught when the receiver gained separation</div>
+        </div>
+        <div class="vs">vs</div>
+        <div class="stat-card big muted-card">
+          <div class="stat-value" id="hero-nongain">—</div>
+          <div class="stat-label" id="hero-nongain-detail">caught when the receiver did not</div>
+        </div>
+      </div>
+
+      <p class="hero-explain" id="hero-explain">Loading…</p>
+    </header>
+
+    <!-- 2. KEY NUMBERS -->
+    <section id="key-numbers">
+      <h2>Key numbers</h2>
+      <p class="note">Every figure on this page is computed from the tracking data by <code>main.py</code> and <code>src/build_site.py</code>.</p>
+      <div class="stat-row" id="key-numbers-row"></div>
+    </section>
+
+    <!-- 3. THE PAYOFF -->
+    <section id="payoff">
+      <h2>The payoff</h2>
+      <p class="lead">Gaining separation during a scramble lifts both completion rate and yards per attempt well above the overall average.</p>
+      <div class="chart-grid">
+        <div class="card chart-card">
+          <h3>Completion % by separation gained</h3>
+          <canvas id="chart-comp"></canvas>
+        </div>
+        <div class="card chart-card">
+          <h3>Yards per attempt by separation gained</h3>
+          <canvas id="chart-ypa"></canvas>
+        </div>
+      </div>
+      <p class="note" id="payoff-note">Loading…</p>
+    </section>
+
+    <!-- 4. WATCH THE PLAYS -->
+    <section id="plays">
+      <h2>Watch the plays</h2>
+      <p class="lead">The clearest scramble-drill reps in the data. Pick a play to watch the receiver work open after the quarterback breaks the pocket.</p>
+      <div class="player-layout">
+        <aside class="play-list" id="play-list"></aside>
+        <div class="card play-stage">
+          <div class="play-header">
+            <div class="ph-main">
+              <div class="ph-title" id="ph-title">Select a play</div>
+              <div class="ph-sub" id="ph-sub"></div>
+            </div>
+            <span class="result-pill" id="result-pill"></span>
+          </div>
+          <div class="field-wrap">
+            <canvas id="field" tabindex="0"></canvas>
+          </div>
+          <div class="play-controls">
+            <button id="play-btn" class="btn">▶ Play</button>
+            <div class="timeline-wrap">
+              <input type="range" id="scrubber" min="0" max="0" value="0" step="1" />
+              <div class="ticks" id="ticks"></div>
+            </div>
+            <span class="clock" id="play-clock">0.0s</span>
+            <div class="speed-toggle" id="speed-toggle">
+              <button data-sp="0.5">0.5×</button>
+              <button data-sp="1" class="active">1×</button>
+              <button data-sp="2">2×</button>
+            </div>
+          </div>
+          <div class="stat-strip" id="stat-strip"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. LEADERBOARD -->
+    <section id="leaderboard">
+      <h2>Who gets open when the play breaks down</h2>
+      <div class="lb-controls">
+        <div class="chips" id="lb-chips">
+          <button class="chip active" data-pos="All">All</button>
+          <button class="chip" data-pos="WR">WR</button>
+          <button class="chip" data-pos="TE">TE</button>
+          <button class="chip" data-pos="RB">RB</button>
+        </div>
+        <input type="search" id="lb-search" placeholder="Search player…" />
+      </div>
+      <div class="table-wrap">
+        <table class="lb-table" id="lb-table">
+          <thead>
+            <tr>
+              <th data-sort="name">Player</th>
+              <th data-sort="position">Pos</th>
+              <th data-sort="team">Team</th>
+              <th data-sort="snaps" class="num">Snaps</th>
+              <th data-sort="mean_sep_gained" class="num">Sep gained</th>
+              <th data-sort="targets" class="num">Tgt</th>
+              <th data-sort="completions" class="num">Comp</th>
+            </tr>
+          </thead>
+          <tbody id="lb-body"></tbody>
+        </table>
+      </div>
+      <p class="note">Small samples (12–27 scramble snaps per player over 8 weeks): individual names are directional, not definitive.</p>
+    </section>
+
+    <!-- 6. BY POSITION -->
+    <section id="by-position">
+      <h2>By position</h2>
+      <div class="card chart-card">
+        <canvas id="chart-pos"></canvas>
+      </div>
+      <p class="note" id="pos-note">Running backs start wide open in the flat and get closed down as the play extends; wide receivers work the other way.</p>
+    </section>
+
+    <!-- 7. TAKEAWAYS -->
+    <section id="takeaways">
+      <h2>Takeaways</h2>
+      <div class="takeaway-grid">
+        <div class="card takeaway">
+          <h3>Receivers: keep working</h3>
+          <p id="takeaway-rec">Loading…</p>
+        </div>
+        <div class="card takeaway">
+          <h3>Quarterbacks: keep your eyes up</h3>
+          <p id="takeaway-qb">Loading…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. METHOD & LIMITS -->
+    <section id="method">
+      <h2>Method &amp; limits</h2>
+      <div class="method-grid">
+        <div class="card">
+          <h3>How we measured it</h3>
+          <table class="glossary">
+            <tbody>
+              <tr><td>Scramble throw</td><td>Dropback tagged SCRAMBLE that ended in a pass (complete, incomplete, or INT)</td></tr>
+              <tr><td>Scramble start</td><td>First moment the QB moves more than 3 yards sideways from where he took the snap</td></tr>
+              <tr><td>Separation</td><td>Distance from the receiver to the nearest defender in coverage</td></tr>
+              <tr><td>Separation gained</td><td>Separation at the throw minus separation at scramble start</td></tr>
+              <tr><td>Target / result</td><td>Receiver named in the play description; result from plays.csv</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Assumptions &amp; limits</h3>
+          <ul class="limits">
+            <li>Tracking ends 0.5s after the throw, so catch-point and yards after catch are not measured; outcomes come from plays.csv.</li>
+            <li>Scramble start is a simple 3-yard rule, not a hand-labeled moment.</li>
+            <li>Separation uses the nearest defender, not necessarily the assigned defender.</li>
+            <li>"Most open" does not account for throw distance or difficulty.</li>
+            <li>The overall effect is statistically significant, but per-player rankings rest on small samples.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Data: NFL Big Data Bowl 2023 — Next Gen Stats player tracking + PFF scouting, 2021 season Weeks 1–8.</p>
+    <p>Built with Python + Kiro · <a href="https://github.com/weswidjo/scramble-drill-score" target="_blank" rel="noopener">GitHub repo</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
